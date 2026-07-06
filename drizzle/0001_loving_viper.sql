@@ -1,0 +1,1 @@
+ALTER TABLE `now_items` ADD `macros` text DEFAULT '[]' NOT NULL;
