@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { page } from '$app/state';
   import favicon from '$lib/assets/favicon.svg';
   import TopNav from '$lib/TopNav.svelte';
   import Sidebar from '$lib/Sidebar.svelte';
@@ -7,6 +8,9 @@
 
   let { children }: { children: Snippet } = $props();
   let collapsed = $state(false);
+
+  // La pantalla de acceso se muestra sola (sin navbar/sidebar) sobre el starfield.
+  const isAcceso = $derived(page.url.pathname === '/acceso');
 
   // View Transitions cuando el browser las soporta para animar el repliegue.
   function withTransition(fn: () => void) {
@@ -40,13 +44,19 @@
 </svg>
 
 <Starfield />
-<TopNav />
-<Sidebar {collapsed} {toggleCollapsed} />
-<main class={collapsed ? 'collapsed' : ''}>
-  <div class="work-scroll">
+{#if isAcceso}
+  <main class="auth-main">
     {@render children()}
-  </div>
-</main>
+  </main>
+{:else}
+  <TopNav />
+  <Sidebar {collapsed} {toggleCollapsed} />
+  <main class={collapsed ? 'collapsed' : ''}>
+    <div class="work-scroll">
+      {@render children()}
+    </div>
+  </main>
+{/if}
 
 <style>
   :global(:root) {
@@ -117,6 +127,24 @@
   }
   main.collapsed {
     left: 2rem;
+  }
+
+  /* Pantalla de acceso: contenedor a pantalla completa, centrado, sin el panel glass. */
+  main.auth-main {
+    position: fixed;
+    inset: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: auto;
   }
 
   .work-scroll {

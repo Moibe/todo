@@ -16,15 +16,19 @@
   {#if data.now}
     <h1>{data.now.text || 'Sin texto'}</h1>
 
-    <MilestonesList nowId={data.now.id} />
+    <div class="body">
+      <div class="main">
+        <MilestonesList nowId={data.now.id} />
 
-    <hr class="sep" />
+        <hr class="sep" />
 
-    <TasksList nowId={data.now.id} />
+        <TasksList nowId={data.now.id} />
+      </div>
 
-    <hr class="sep" />
-
-    <Calendar />
+      <aside class="side">
+        <Calendar />
+      </aside>
+    </div>
   {:else}
     <h1>Now no encontrado</h1>
     <p class="muted">No existe un elemento con ese identificador.</p>
@@ -33,12 +37,36 @@
 
 <style>
   .page {
-    max-width: 640px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 1.5rem 0.5rem 2rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+  }
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 2rem;
+    align-items: start;
+  }
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+  .side {
+    position: sticky;
+    top: 1.5rem;
+  }
+  @media (max-width: 720px) {
+    .body {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      position: static;
+    }
   }
   .back {
     align-self: flex-start;
