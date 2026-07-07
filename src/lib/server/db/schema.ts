@@ -34,7 +34,25 @@ export const notes = sqliteTable('notes', {
 	orden: integer('orden').notNull().default(0)
 });
 
+// Milestones de un Now. `nowId` a qué Now pertenecen. `orden` preserva el acomodo.
+export const milestones = sqliteTable('milestones', {
+	id: integer('id').primaryKey(),
+	nowId: integer('now_id').notNull(),
+	text: text('text').notNull().default(''),
+	orden: integer('orden').notNull().default(0)
+});
+
+// Tasks de un Now. Mismo modelo que milestones: `nowId` + `orden`.
+export const tasks = sqliteTable('tasks', {
+	id: integer('id').primaryKey(),
+	nowId: integer('now_id').notNull(),
+	text: text('text').notNull().default(''),
+	orden: integer('orden').notNull().default(0)
+});
+
 export type MacroChip = typeof macroChips.$inferSelect;
 export type NowItem = typeof nowItems.$inferSelect;
 export type Playbook = typeof playbooks.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+export type Milestone = typeof milestones.$inferSelect;
+export type Task = typeof tasks.$inferSelect;

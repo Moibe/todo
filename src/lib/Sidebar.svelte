@@ -12,6 +12,10 @@
     toggleCollapsed: () => void;
   } = $props();
 
+  // Now seleccionado: cuando estamos en /now/[id], el +page.server.ts expone
+  // `now` en page.data y aquí lo mostramos como sub-item bajo "Now".
+  const nowCtx = $derived((page.data as { now?: { id: number; text: string } }).now ?? null);
+
   let tiltX = $state(0);
   let tiltY = $state(0);
   let sidebarWidth = $state(240);
@@ -65,10 +69,16 @@
         <svg class="nav-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /></svg>
         <span>Macro</span>
       </a>
-      <a href="/seccion-dos" class="nav-item" aria-current={page.url.pathname === '/seccion-dos' ? 'page' : undefined}>
+      <a href="/seccion-dos" class="nav-item" class:in-path={!!nowCtx} aria-current={page.url.pathname === '/seccion-dos' ? 'page' : undefined}>
         <svg class="nav-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6h10M11 12h10M11 18h10" /><path d="m3 6 1.5 1.5L7 5" /><path d="m3 12 1.5 1.5L7 11" /><path d="m3 18 1.5 1.5L7 17" /></svg>
         <span>Now</span>
       </a>
+      {#if nowCtx}
+        <a href={`/now/${nowCtx.id}`} class="nav-sub depth-1" aria-current="page">
+          <svg class="sub-ico" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          <span class="text">{nowCtx.text || 'Sin texto'}</span>
+        </a>
+      {/if}
       <a href="/playbook" class="nav-item" aria-current={page.url.pathname === '/playbook' ? 'page' : undefined}>
         <svg class="nav-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>
         <span>Playbooks</span>
@@ -173,6 +183,47 @@
   }
   .nav-item[aria-current='page'] .nav-ico {
     color: #93c5fd;
+  }
+  /* Parent "Now" resaltado suave cuando hay un Now seleccionado (submenú abierto). */
+  .nav-item.in-path {
+    color: #fff;
+    background: rgba(37, 99, 235, 0.07);
+    border-color: rgba(37, 99, 235, 0.22);
+  }
+
+  /* Sub-item: el Now seleccionado, anidado bajo "Now" con línea de árbol. */
+  .nav-sub {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.95rem 0.5rem 2rem;
+    color: rgba(255, 255, 255, 0.82);
+    text-decoration: none;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+  .nav-sub:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .nav-sub[aria-current='page'] {
+    background: rgba(37, 99, 235, 0.18);
+    color: #fff;
+    border-color: rgba(37, 99, 235, 0.45);
+    box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.18) inset;
+  }
+  .sub-ico {
+    flex-shrink: 0;
+    color: rgba(147, 197, 253, 0.9);
+  }
+  .nav-sub .text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .sidebar-footer {
     display: flex;

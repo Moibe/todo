@@ -1,32 +1,10 @@
 <script lang="ts">
-  import { page } from '$app/state';
+  import type { PageData } from './$types';
+  import MilestonesList from '$lib/MilestonesList.svelte';
+  import TasksList from '$lib/TasksList.svelte';
+  import Calendar from '$lib/Calendar.svelte';
 
-  type Item = { id: number; text: string; macros: number[] };
-
-  let loaded = $state(false);
-  let item = $state<Item | null>(null);
-
-  const id = $derived(Number(page.params.id));
-
-  // $effect (no onMount) para que al navegar entre /now/1 y /now/2 — mismo
-  // componente reusado — el título se recargue cuando cambia el id.
-  $effect(() => {
-    const currentId = id;
-    loaded = false;
-    fetch('/api/now')
-      .then((r) => r.json())
-      .then((list: Partial<Item>[]) => {
-        const found = list.find((it) => it.id === currentId);
-        item = found
-          ? { id: found.id!, text: found.text ?? '', macros: found.macros ?? [] }
-          : null;
-        loaded = true;
-      })
-      .catch(() => {
-        item = null;
-        loaded = true;
-      });
-  });
+  let { data }: { data: PageData } = $props();
 </script>
 
 <div class="page">
@@ -35,11 +13,18 @@
     Volver
   </a>
 
-  {#if !loaded}
-    <p class="muted">Cargando…</p>
-  {:else if item}
-    <h1>{item.text || 'Sin texto'}</h1>
-    <p class="muted">Contenido de este Now — en construcción.</p>
+  {#if data.now}
+    <h1>{data.now.text || 'Sin texto'}</h1>
+
+    <MilestonesList nowId={data.now.id} />
+
+    <hr class="sep" />
+
+    <TasksList nowId={data.now.id} />
+
+    <hr class="sep" />
+
+    <Calendar />
   {:else}
     <h1>Now no encontrado</h1>
     <p class="muted">No existe un elemento con ese identificador.</p>
@@ -80,6 +65,13 @@
     font-size: 1.6rem;
     color: #fff;
     letter-spacing: 0.01em;
+  }
+  .sep {
+    width: 100%;
+    height: 0;
+    margin: 0.25rem 0;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
   .muted {
     margin: 0;

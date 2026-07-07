@@ -15,6 +15,20 @@
       "when": 1783381260428,
       "tag": "0001_loving_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783454235498,
+      "tag": "0002_handy_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1783454589159,
+      "tag": "0003_mixed_blacklash",
+      "breakpoints": true
     }
   ]
 }
