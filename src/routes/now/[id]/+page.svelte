@@ -26,7 +26,7 @@
       </div>
 
       <aside class="side">
-        <Calendar />
+        <Calendar nowId={data.now.id} />
       </aside>
     </div>
   {:else}

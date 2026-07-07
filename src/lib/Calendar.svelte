@@ -1,7 +1,12 @@
 <script lang="ts">
-  // Calendario de mes autónomo (sin dependencias). Navega meses, resalta HOY.
-  // Semana inicia en lunes. Por ahora es visual; luego se puede ligar a fechas
-  // de milestones/tasks.
+  // Calendario de mes. Muestra las tasks agendadas (por fecha) del Now actual y
+  // acepta que se arrastren tasks a un día para agendarlas (o reagendarlas).
+  // Comparte datos con TasksList vía tasksStore.
+  import { onMount } from 'svelte';
+  import { tasksStore } from '$lib/tasksStore.svelte';
+
+  let { nowId }: { nowId: number } = $props();
+
   const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
   const MONTHS = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -15,11 +20,19 @@
 
   let viewY = $state(todayY);
   let viewM = $state(todayM);
+  let dragOverDay = $state<number | null>(null);
+
+  onMount(() => {
+    tasksStore.load();
+  });
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = (d: number) => `${viewY}-${pad(viewM + 1)}-${pad(d)}`;
 
   // Grilla del mes: huecos iniciales (lunes-first) + días 1..n.
   const cells = $derived.by(() => {
     const first = new Date(viewY, viewM, 1);
-    const offset = (first.getDay() + 6) % 7; // 0=lunes
+    const offset = (first.getDay() + 6) % 7;
     const daysInMonth = new Date(viewY, viewM + 1, 0).getDate();
     const out: (number | null)[] = [];
     for (let i = 0; i < offset; i++) out.push(null);
@@ -27,21 +40,17 @@
     return out;
   });
 
+  // Tasks (de este Now) agendadas en un día dado.
+  function tasksOn(d: number) {
+    const ds = dateStr(d);
+    return tasksStore.forNow(nowId).filter((t) => t.fecha === ds);
+  }
+
   function prevMonth() {
-    if (viewM === 0) {
-      viewM = 11;
-      viewY -= 1;
-    } else {
-      viewM -= 1;
-    }
+    if (viewM === 0) { viewM = 11; viewY -= 1; } else { viewM -= 1; }
   }
   function nextMonth() {
-    if (viewM === 11) {
-      viewM = 0;
-      viewY += 1;
-    } else {
-      viewM += 1;
-    }
+    if (viewM === 11) { viewM = 0; viewY += 1; } else { viewM += 1; }
   }
   function goToday() {
     viewY = todayY;
@@ -49,6 +58,16 @@
   }
 
   const isToday = (d: number) => d === todayD && viewM === todayM && viewY === todayY;
+
+  function onDrop(e: DragEvent, d: number) {
+    e.preventDefault();
+    dragOverDay = null;
+    const raw = e.dataTransfer?.getData('text/plain');
+    if (raw == null || raw === '') return;
+    const id = Number(raw);
+    if (Number.isNaN(id)) return;
+    tasksStore.setDate(id, dateStr(d));
+  }
 </script>
 
 <section class="calendar">
@@ -79,7 +98,28 @@
         {#if cell === null}
           <span class="cell blank"></span>
         {:else}
-          <span class="cell day" class:today={isToday(cell)}>{cell}</span>
+          {@const dayTasks = tasksOn(cell)}
+          <div
+            class="cell day"
+            class:today={isToday(cell)}
+            class:drag-over={dragOverDay === cell}
+            class:has-tasks={dayTasks.length > 0}
+            role="gridcell"
+            title={dayTasks.length ? dayTasks.map((t) => t.text || 'Sin nombre').join('\n') : undefined}
+            ondragover={(e) => {
+              e.preventDefault();
+              dragOverDay = cell;
+            }}
+            ondragleave={() => {
+              if (dragOverDay === cell) dragOverDay = null;
+            }}
+            ondrop={(e) => onDrop(e, cell)}
+          >
+            <span class="daynum">{cell}</span>
+            {#if dayTasks.length}
+              <span class="dot" aria-label={`${dayTasks.length} task(s)`}>{dayTasks.length}</span>
+            {/if}
+          </div>
         {/if}
       {/each}
     </div>
@@ -174,6 +214,7 @@
     padding: 0.2rem 0;
   }
   .cell {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -185,7 +226,6 @@
   .cell.day {
     border: 1px solid rgba(255, 255, 255, 0.08);
     transition: background 0.15s ease, border-color 0.15s ease;
-    cursor: default;
   }
   .cell.day:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -198,7 +238,35 @@
     font-weight: 700;
     box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25) inset;
   }
+  /* Resalte al arrastrar una task encima */
+  .cell.drag-over {
+    background: rgba(34, 197, 94, 0.28);
+    border-color: rgba(134, 239, 172, 0.8);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4) inset;
+  }
+  .cell.has-tasks .daynum {
+    font-weight: 700;
+    color: #fff;
+  }
   .cell.blank {
     border: none;
+  }
+  .dot {
+    position: absolute;
+    bottom: 3px;
+    right: 3px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(147, 197, 253, 0.9);
+    color: #0a2a5e;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
   }
 </style>

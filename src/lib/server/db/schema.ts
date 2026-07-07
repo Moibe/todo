@@ -42,12 +42,14 @@ export const milestones = sqliteTable('milestones', {
 	orden: integer('orden').notNull().default(0)
 });
 
-// Tasks de un Now. Mismo modelo que milestones: `nowId` + `orden`.
+// Tasks de un Now. `fecha` (YYYY-MM-DD, null = sin agendar) se asigna al arrastrar
+// la task a un día del calendario.
 export const tasks = sqliteTable('tasks', {
 	id: integer('id').primaryKey(),
 	nowId: integer('now_id').notNull(),
 	text: text('text').notNull().default(''),
-	orden: integer('orden').notNull().default(0)
+	orden: integer('orden').notNull().default(0),
+	fecha: text('fecha')
 });
 
 export type MacroChip = typeof macroChips.$inferSelect;

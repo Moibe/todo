@@ -1,50 +1,31 @@
 <script lang="ts">
-  // Tasks de un Now. Mismo patrón que MilestonesList: lista PLANA en la DB
-  // (`/api/tasks`) filtrada por `nowId`; texto fijo + lápiz/palomita, Esc revierte,
-  // bote para borrar.
+  // Tasks de un Now. Usa el store compartido (tasksStore) para que el calendario
+  // vea los mismos datos. Cada fila (en modo display) es ARRASTRABLE hacia un día
+  // del calendario para agendarla; si ya tiene fecha, muestra una pill para verla
+  // o quitarla.
   import { onMount } from 'svelte';
-
-  type Task = { id: number; nowId: number; text: string };
+  import { tasksStore, type Task } from '$lib/tasksStore.svelte';
 
   let { nowId }: { nowId: number } = $props();
 
-  let all = $state<Task[]>([]);
   let editingId = $state<number | null>(null);
   let editOriginal = '';
-  let nextId = 0;
 
-  const items = $derived(all.filter((t) => t.nowId === nowId));
+  const items = $derived(tasksStore.forNow(nowId));
 
-  onMount(async () => {
-    try {
-      const list: Partial<Task>[] = await fetch('/api/tasks').then((r) => r.json());
-      all = list.map((t) => ({ id: t.id!, nowId: t.nowId!, text: t.text ?? '' }));
-      nextId = all.reduce((max, t) => Math.max(max, t.id), 0) + 1;
-    } catch {
-      all = [];
-    }
+  onMount(() => {
+    tasksStore.load();
   });
 
-  function save() {
-    fetch('/api/tasks', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(all)
-    }).catch(() => {});
-  }
-
   function addItem() {
-    const item = { id: nextId++, nowId, text: '' };
-    all.push(item);
+    const id = tasksStore.add(nowId);
     editOriginal = '';
-    editingId = item.id;
-    save();
+    editingId = id;
   }
 
   function removeItem(id: number) {
-    all = all.filter((t) => t.id !== id);
     if (editingId === id) editingId = null;
-    save();
+    tasksStore.remove(id);
   }
 
   function startEdit(item: Task) {
@@ -54,16 +35,15 @@
 
   function confirmEdit(item: Task) {
     if (editingId !== item.id) return;
-    item.text = item.text.trim();
     editingId = null;
-    save();
+    tasksStore.setText(item.id, item.text.trim());
   }
 
   function cancelEdit(item: Task) {
     if (editingId !== item.id) return;
     item.text = editOriginal;
     editingId = null;
-    save();
+    tasksStore.save();
   }
 
   function editKeydown(e: KeyboardEvent, item: Task) {
@@ -77,6 +57,18 @@
   function focusOnMount(el: HTMLInputElement) {
     el.focus();
     el.select();
+  }
+
+  function onDragStart(e: DragEvent, item: Task) {
+    if (!e.dataTransfer) return;
+    e.dataTransfer.setData('text/plain', String(item.id));
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  function fmtFecha(f: string) {
+    const [, m, d] = f.split('-').map(Number);
+    return `${d} ${MESES[m - 1]}`;
   }
 </script>
 
@@ -94,7 +86,12 @@
   {:else}
     <ol class="list">
       {#each items as item, i (item.id)}
-        <li class="row">
+        <li
+          class="row"
+          class:draggable={editingId !== item.id}
+          draggable={editingId !== item.id}
+          ondragstart={(e) => onDragStart(e, item)}
+        >
           <span class="num">{i + 1}</span>
 
           {#if editingId === item.id}
@@ -120,6 +117,17 @@
             <span class="text" class:empty={!item.text} ondblclick={() => startEdit(item)}>
               {item.text || 'Sin nombre'}
             </span>
+            {#if item.fecha}
+              <button
+                class="date-pill"
+                type="button"
+                title="Quitar del calendario"
+                onclick={() => tasksStore.setDate(item.id, null)}
+              >
+                {fmtFecha(item.fecha)}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            {/if}
             <button class="icon edit" type="button" aria-label="Editar" onclick={() => startEdit(item)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" /></svg>
             </button>
@@ -131,6 +139,7 @@
         </li>
       {/each}
     </ol>
+    <p class="drag-hint">Tip: arrastra una task al calendario para agendarla.</p>
   {/if}
 </section>
 
@@ -153,11 +162,13 @@
     letter-spacing: 0.01em;
   }
 
-  .empty-hint {
+  .empty-hint,
+  .drag-hint {
     margin: 0;
-    padding: 0.5rem 0.35rem;
+    padding: 0.25rem 0.35rem;
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.45);
   }
 
   .list {
@@ -182,6 +193,12 @@
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.35);
   }
+  .row.draggable {
+    cursor: grab;
+  }
+  .row.draggable:active {
+    cursor: grabbing;
+  }
   .num {
     flex-shrink: 0;
     width: 1.5rem;
@@ -204,6 +221,27 @@
   .text.empty {
     color: rgba(255, 255, 255, 0.35);
     font-style: italic;
+  }
+
+  .date-pill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(147, 197, 253, 0.4);
+    background: rgba(37, 99, 235, 0.22);
+    color: #cfe3ff;
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .date-pill:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fff;
   }
 
   .item-input {

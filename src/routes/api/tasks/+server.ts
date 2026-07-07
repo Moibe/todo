@@ -3,11 +3,11 @@ import { db } from '$lib/server/db';
 import { tasks } from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
-type Task = { id: number; nowId: number; text: string };
+type Task = { id: number; nowId: number; text: string; fecha: string | null };
 
 export const GET: RequestHandler = () => {
 	const rows = db.select().from(tasks).orderBy(tasks.orden).all();
-	return json(rows.map((r) => ({ id: r.id, nowId: r.nowId, text: r.text })));
+	return json(rows.map((r) => ({ id: r.id, nowId: r.nowId, text: r.text, fecha: r.fecha })));
 };
 
 export const PUT: RequestHandler = async ({ request }) => {
@@ -16,7 +16,15 @@ export const PUT: RequestHandler = async ({ request }) => {
 		tx.delete(tasks).run();
 		if (items.length) {
 			tx.insert(tasks)
-				.values(items.map((t, i) => ({ id: t.id, nowId: t.nowId, text: t.text ?? '', orden: i })))
+				.values(
+					items.map((t, i) => ({
+						id: t.id,
+						nowId: t.nowId,
+						text: t.text ?? '',
+						orden: i,
+						fecha: t.fecha ?? null
+					}))
+				)
 				.run();
 		}
 	});
