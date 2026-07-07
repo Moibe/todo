@@ -97,6 +97,9 @@
       {#each items as item, i (item.id)}
         <li class="row">
           <span class="num">{i + 1}</span>
+          <a class="icon play" href={`/now/${nowId}/milestone/${item.id}`} aria-label="Abrir milestone">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </a>
 
           {#if editingId === item.id}
             <input
@@ -254,6 +257,15 @@
     color: #fff;
     background: rgba(239, 68, 68, 0.18);
     border-color: rgba(239, 68, 68, 0.4);
+  }
+  .icon.play {
+    color: rgba(147, 197, 253, 0.9);
+    text-decoration: none;
+  }
+  .icon.play:hover {
+    color: #fff;
+    background: rgba(37, 99, 235, 0.28);
+    border-color: rgba(147, 197, 253, 0.5);
   }
 
   .add {

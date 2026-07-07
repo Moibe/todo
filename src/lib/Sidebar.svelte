@@ -15,6 +15,11 @@
   // Now seleccionado: cuando estamos en /now/[id], el +page.server.ts expone
   // `now` en page.data y aquí lo mostramos como sub-item bajo "Now".
   const nowCtx = $derived((page.data as { now?: { id: number; text: string } }).now ?? null);
+  // Milestone seleccionado: en /now/[id]/milestone/[mid] el loader expone también
+  // `milestone`; lo colgamos como sub-sub-item (depth-2) bajo el Now.
+  const msCtx = $derived(
+    (page.data as { milestone?: { id: number; nowId: number; text: string } }).milestone ?? null
+  );
 
   let tiltX = $state(0);
   let tiltY = $state(0);
@@ -74,9 +79,20 @@
         <span>Now</span>
       </a>
       {#if nowCtx}
-        <a href={`/now/${nowCtx.id}`} class="nav-sub depth-1" aria-current="page">
+        <a
+          href={`/now/${nowCtx.id}`}
+          class="nav-sub depth-1"
+          class:in-path={!!msCtx}
+          aria-current={page.url.pathname === `/now/${nowCtx.id}` ? 'page' : undefined}
+        >
           <svg class="sub-ico" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
           <span class="text">{nowCtx.text || 'Sin texto'}</span>
+        </a>
+      {/if}
+      {#if msCtx}
+        <a href={`/now/${msCtx.nowId}/milestone/${msCtx.id}`} class="nav-sub depth-2" aria-current="page">
+          <svg class="sub-ico" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          <span class="text">{msCtx.text || 'Sin nombre'}</span>
         </a>
       {/if}
       <a href="/playbook" class="nav-item" aria-current={page.url.pathname === '/playbook' ? 'page' : undefined}>
@@ -221,6 +237,17 @@
     color: #fff;
     border-color: rgba(37, 99, 235, 0.45);
     box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.18) inset;
+  }
+  /* Depth-1 resaltado suave cuando el que está activo es un milestone hijo. */
+  .nav-sub.in-path {
+    color: #fff;
+    background: rgba(37, 99, 235, 0.07);
+    border-color: rgba(37, 99, 235, 0.22);
+  }
+  /* Sub-sub-item: milestone anidado bajo el Now, con más sangría. */
+  .nav-sub.depth-2 {
+    padding-left: 3.1rem;
+    font-size: 0.82rem;
   }
   .sub-ico {
     flex-shrink: 0;
