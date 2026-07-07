@@ -22,6 +22,8 @@ Thumbs.db
 local.db
 local.db-shm
 local.db-wal
+local.db.bak-*
+.dbsync-tmp.db
 
 # Vite
 vite.config.js.timestamp-*
