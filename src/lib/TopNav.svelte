@@ -26,10 +26,9 @@
     glowOpacity = 0;
   }
 
-  // Edita estos items por las secciones reales de tu app.
-  const items = [
-    { href: '/', label: 'Inicio' }
-  ];
+  // Edita estos items por las secciones reales de tu app. La navegación real vive
+  // en el Sidebar; aquí el brand ya enlaza a "/", así que se dejó vacío.
+  const items: { href: string; label: string }[] = [];
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -45,13 +44,15 @@
     <span class="brand-title">todo</span>
   </a>
 
-  <nav class="topnav-nav">
-    {#each items as it (it.href)}
-      <a href={it.href} class="nav-item" aria-current={page.url.pathname === it.href ? 'page' : undefined}>
-        {it.label}
-      </a>
-    {/each}
-  </nav>
+  {#if items.length}
+    <nav class="topnav-nav">
+      {#each items as it (it.href)}
+        <a href={it.href} class="nav-item" aria-current={page.url.pathname === it.href ? 'page' : undefined}>
+          {it.label}
+        </a>
+      {/each}
+    </nav>
+  {/if}
 </header>
 
 <style>
