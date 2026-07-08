@@ -22,7 +22,7 @@ jobs:
             # explícito. La cadena con && aborta si algo falla (no reinicia con build roto).
             - name: deploy on droplet
               run: |
-                  ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use node >/dev/null && { [ -d ~/code/todo ] || git clone git@github.com:Moibe/todo.git ~/code/todo; } && cd ~/code/todo && git checkout main && git pull origin main && npm ci && npm run db:migrate && npm run build && { [ -f .env ] && set -a && . ./.env && set +a || true; } && export PORT="${PORT:-3500}" HOST="${HOST:-127.0.0.1}" && { pm2 delete todo >/dev/null 2>&1 || true; } && pm2 start build/index.js --name todo --update-env && pm2 save && sleep 2 && curl -fsS -o /dev/null -w "local http=%{http_code}\n" http://127.0.0.1:3500/'
+                  ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use node >/dev/null && { [ -d ~/code/todo ] || git clone git@github.com:Moibe/todo.git ~/code/todo; } && cd ~/code/todo && git checkout main && git pull origin main && npm ci && { cp local.db "local.db.bak-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true; } && npm run db:migrate && npm run build && { [ -f .env ] && set -a && . ./.env && set +a || true; } && export PORT="${PORT:-3500}" HOST="${HOST:-127.0.0.1}" && { pm2 delete todo >/dev/null 2>&1 || true; } && pm2 start build/index.js --name todo --update-env && pm2 save && sleep 2 && curl -fsS -o /dev/null -w "local http=%{http_code}\n" http://127.0.0.1:3500/'
 
             - name: cleanup
               run: rm -rf ~/.ssh
